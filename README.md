@@ -1,96 +1,182 @@
+<div align="center">
+
 # TGMSC Placement Assistant
 
-Help job seekers explore placement-drive opportunities, register once and arrive better prepared. Give TGMSC staff one place to manage employers, roles, registrations and follow-up.
+**One registration. Clearer role choices. Better organised placement drives.**
 
-Built from an internship observation: candidates from different backgrounds need useful guidance across IT and non-IT vacancies, while organisers need consistent registration records. Recommendations guide exploration; employers make interview and hiring decisions. All open roles remain available.
+A practical internship project for Telangana Minorities Study Circle, connecting candidate registration, browser-based résumé matching and staff operations in one application.
 
-## What it does
+[Open the live app](https://tgmsc-placement-assistant.anwar7-akber.workers.dev/) · [How it works](#how-it-works) · [Run locally](#run-locally) · [Deployment guide](docs/DEPLOYMENT.md)
 
-- Public drive and role browsing before entering personal details.
-- PDF (text-based, up to 12 pages), DOCX and TXT resume reading, up to 5 MB.
-- Editable, candidate-confirmed profile; education, pursuing status, batches and whole-year experience checks.
-- Pretrained MiniLM semantic suggestions in the browser, plus a labelled basic matching option.
-- Registration reference, selected interests and repeat-submission recovery.
-- Approved staff Google sign-in; event/company/role management, corrections, follow-up, search, paging and CSV export.
+![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers_%2B_D1-F38020?style=flat-square)
+![Firebase](https://img.shields.io/badge/Firebase-Staff_authentication-DD8B00?style=flat-square)
 
-Original resume files stay on the device. Confirmed profile details are saved in the database after consent. No new neural model was trained and no paid generative AI API is used. Software was developed with AI assistance and reviewed through implementation and testing; synthetic examples do not establish a real-world accuracy percentage.
+</div>
+
+![TGMSC Placement Assistant public homepage](docs/images/homepage.jpg)
+
+*Actual deployed interface. The screenshot shows the empty state between published drives; available opportunities are managed by placement staff.*
+
+## The problem
+
+Placement drives bring together candidates with different qualifications and companies hiring for different roles. A registration form can collect names, but it does not help someone understand which opportunities to explore—or give organisers a complete workflow for managing roles and following up.
+
+At TGMSC, this also includes technology students considering non-IT opportunities. A useful assistant should help them discover options without making their degree background a barrier to exploring the drive.
+
+This project turns that workflow into a single website: browse opportunities, confirm a profile, explore suggestions and register once for the selected drive. Staff manage the information behind those opportunities and the resulting registrations.
+
+## What the application delivers
+
+| For job seekers | For placement staff |
+| --- | --- |
+| Browse open drives and roles before providing personal details | Create and update drives, employers and job roles |
+| Read a résumé or enter details manually | Specify qualifications, accepted graduation years and pursuing-student rules |
+| Correct extracted information before using it | Access records through approved Google accounts |
+| Compare profile text with role descriptions | Search, filter and page through registrations |
+| See matched skills, missing details and stated requirements | Correct confirmed candidate details and role interests |
+| Explore every open role, including options outside their background | Track attendance, interviews and follow-up |
+| Select up to 20 interests, or register without selecting a role | Export all records or the current filtered selection as CSV |
+| Receive a registration reference | Review recent record changes and remove registrations with confirmation |
+
+**Recommendations support candidate choice. They do not reject applicants, send employer applications or promise an interview or job.**
+
+## How it works
+
+1. **Choose a drive.** Review the venue, reporting instructions and available roles.
+2. **Confirm a profile.** Upload a supported résumé or fill in the form. Check contact details, skills, education and experience.
+3. **Explore roles.** Compare suggestions, review requirements and select interests. All open roles in the drive remain available.
+4. **Register.** Give consent and submit. Keep the reference for placement staff.
+
+Staff use a separate workspace at `/staff`. Google sign-in establishes identity; the server checks an approved-email list before allowing access to records or changes.
+
+### What the AI actually does
+
+The application uses the pretrained **[all-MiniLM-L6-v2](https://huggingface.co/Xenova/all-MiniLM-L6-v2)** sentence-embedding model through Transformers.js. The bundled quantized ONNX model runs in the candidate's browser using WebAssembly.
+
+It converts profile text and role descriptions into numerical representations, then compares them with **cosine similarity** to order suggestions. Mean pooling and vector normalisation are used during embedding extraction.
+
+| Layer | What it checks |
+| --- | --- |
+| Text similarity | How closely skills, degree details and the profile summary relate to a role description |
+| Skill comparison | Which listed role skills also appear in the candidate's confirmed skill list |
+| Explicit requirements | Completed qualification, pursuing status, graduation batch and whole years of experience |
+| Candidate choice | Which roles the person wants to explore, even when some requirements need discussion |
+
+Degree or specialisation notes are displayed for organiser confirmation rather than treated as fully understood eligibility rules. Missing information stays unknown. A similarity score is **not a hiring probability**.
+
+If the model is unavailable or slow to load, the interface offers clearly labelled **basic text matching**. Registration can continue through that path. No task-specific model was trained for this project, and no paid generative AI API is required.
+
+### Résumé handling
+
+- Supported: text-based PDF, DOCX and TXT, up to **5 MB**; PDFs are limited to **12 pages**.
+- PDF.js and Mammoth extract text locally; simple rules suggest draft contact fields and recognised skills.
+- Qualification and experience require candidate confirmation. Scanned PDFs and images need manual entry.
+- The original file stays on the device. Confirmed profile fields—including the editable summary—and selected interests are sent to the application database after consent.
 
 ## Architecture
 
-React + TypeScript + Vite serves the interface as static files. A small Cloudflare Worker handles `/api/*`. Cloudflare D1 stores records. Firebase Authentication verifies Google identities; the Worker validates signed ID tokens and the approved-email list on every staff request. It does not trust client-supplied identity headers or typed emails.
+```mermaid
+flowchart TD
+    A[Candidate browser] --> B[Static React interface]
+    B --> C[Local résumé parsing and matching]
+    B -->|Confirmed registration| D[Cloudflare Worker API]
+    E[Staff browser] -->|Google sign-in| F[Firebase Authentication]
+    F -->|Signed identity token| E
+    E -->|Token with each staff request| D
+    D -->|Verify token and approved email| G[Authorised staff operations]
+    D --> H[(Cloudflare D1)]
+    G --> H
+```
 
-PDF.js and Mammoth extract resume text. Transformers.js uses the bundled quantized `Xenova/all-MiniLM-L6-v2` model and ONNX WebAssembly runtime to compare profile/role text. Explicit requirements are separate from similarity. Model/runtime downloads total approximately 43 MB on a first uncached use; basic matching remains available. Physical low-memory Android performance and independent relevance evaluation need a supervised pilot.
+Static assets and `/api/*` share one origin. Static requests bypass the Worker; the API handles database operations and staff authorisation. The embedding model runs in the browser rather than on the Worker.
 
-## Requirements
+## Technology choices
 
-Node.js 22.13+ (Node 24 recommended), pnpm 11.25.0, a Cloudflare account on Workers Free, and a Firebase project on Spark. Do not enable paid services to follow these instructions.
+| Technology | Responsibility | Reason for the choice |
+| --- | --- | --- |
+| React, TypeScript and Vite | Candidate and staff interfaces | Shared components, typed data and a static deployment |
+| Vanilla CSS and Lucide icons | Responsive layout and controls | A small, consistent visual system without a UI framework |
+| Cloudflare Workers and D1 | API and relational records | One hosting platform for the application and its database |
+| Firebase Authentication | Staff Google sign-in | Managed identity without building a password system |
+| `jose` | Server verification of Firebase tokens | Signature, project, expiry and identity checks before staff access |
+| Transformers.js and ONNX WebAssembly | Browser-based semantic matching | Reuse a pretrained model without a separate inference server |
+| PDF.js and Mammoth | Résumé text extraction | Established parsers for supported document formats |
+| Zod and Drizzle tooling | Input validation and schema migrations | Consistent data checks and versioned database changes |
+
+The design targets a free-tier pilot with Cloudflare and Firebase. Provider limits still apply; capacity and operating costs should be reviewed as usage grows. There is no paid AI service dependency.
+
+## Privacy and access
+
+- Candidate browsing and registration do not require an account.
+- Staff endpoints verify signed Google identities and the server-side `STAFF_EMAILS` allowlist. Google sign-in alone does not grant staff access.
+- API responses and exports use `Cache-Control: no-store`; tokens travel in request headers rather than export links.
+- Database queries bind user values. Registration retries use a request identifier, and duplicate checks account for shared family phone numbers.
+- CSV cells are escaped, including potentially dangerous spreadsheet formulas.
+- Staff changes record the actor, action, record ID and time. Profile contents are not copied into that history.
+- Real `.env` and `.dev.vars` files are ignored by Git; the committed examples contain blank values.
+
+These are implemented controls, not a claim of independent security certification. Dependency advisories and operational access settings need ongoing review. See the [deployment and maintenance guide](docs/DEPLOYMENT.md).
+
+## Run locally
+
+Use **Node.js 24**, **pnpm 11.25.0**, and **Python 3 available as `python`** for the database regression test.
 
 ```sh
-corepack enable
+git clone https://github.com/Anwar-Qureshi/tgmsc-placement-assistant.git
+cd tgmsc-placement-assistant
 pnpm install --frozen-lockfile
-pnpm check
-pnpm test
 ```
 
-## Firebase: owner setup
-
-1. Create a Firebase project, keep Spark, and skip Analytics unless you independently need it.
-2. In Authentication, enable Google and choose the project support email.
-3. In Project settings, register a Web app. Copy its public configuration into `.env` using `.env.example`.
-4. Add `localhost` and your eventual `YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev` domain to Authentication's authorised domains.
-5. Set the same project ID and the exact approved staff email(s) in `.dev.vars` using `.dev.vars.example` for local development. Comma-separate multiple staff emails. No candidate needs a Firebase account.
-
-Google sign-in opens a popup; allow it if the browser blocks it. Authentication is stored for the browser session. Signing out clears that browser's login; an already-issued copied ID token can remain valid until expiry (normally up to an hour). Removing an email from the server allowlist and redeploying prevents future requests by that account. This release does not claim Firebase administrator-level token revocation checks.
-
-## Cloudflare database and deployment
-
-Create the database in your own account:
-
-```sh
-pnpm exec wrangler login
-pnpm exec wrangler d1 create tgmsc-placement
-```
-
-Replace the placeholder `database_id` in `wrangler.jsonc` with the returned ID. Set `vars.FIREBASE_PROJECT_ID` there. After the initial deploy, run `pnpm exec wrangler secret put STAFF_EMAILS` and enter the comma-separated approved staff emails into its prompt. Do not add STAFF_EMAILS as a second `vars` entry when it is a secret. Staff access stays closed until it is configured. Do not create a service-account key for this app.
+Create `.env` from [`.env.example`](.env.example) and `.dev.vars` from [`.dev.vars.example`](.dev.vars.example). Supply your own Firebase web configuration and local approved staff emails. For local sign-in, enable Google in Firebase and add `localhost` to its authorised domains.
 
 ```sh
 pnpm db:local
 pnpm dev
-# Before first production use, against your NEW empty database:
-pnpm db:remote
-pnpm build
-pnpm run deploy
 ```
 
-`pnpm build` reads public `VITE_FIREBASE_*` values at build time. For automatic deploys, connect this repository to Workers Builds: build command `pnpm build`, deploy command `pnpm run deploy`, root repository directory. Configure Node 24, pnpm 11.25.0 and the four `VITE_FIREBASE_*` build variables in the Cloudflare project. Keep the production project ID consistent between browser build and Worker runtime. Apply migrations deliberately before deploying code that needs them; a Git push does not automatically migrate the database.
+Open the URL printed by Vite. The local database starts empty; an approved staff account can create a fictional test drive, company and role. Follow [the deployment guide](docs/DEPLOYMENT.md) before connecting a different Cloudflare account or deploying a fork.
 
-After the first deploy, add the exact generated hostname in Firebase authorised domains, rebuild/redeploy if configuration changed, and verify Google sign-in with your approved account. Google sign-in alone does not make someone an administrator.
+## Validation
 
-The old ChatGPT-hosted database is separate. This repository does not copy, delete or migrate its records automatically. Before moving any real data, export/back up the original database, test import into a separate database and compare counts and interests. Keep the old link available until acceptance passes. Historical SQL migration files must not be rewritten or replayed on already-migrated databases.
+```sh
+pnpm check
+pnpm test
+pnpm build
+pnpm audit
+```
 
-## Release acceptance
+The existing **40 automated tests** cover token verification and rejection, concurrent request isolation, requirement checks, whole-year experience, graduation batches, matching fallback logic, duplicate identity rules, CSV escaping, document parsing and model/runtime asset hashes.
 
-Verify registration on an Android phone, resume correction, all-role exploration, confirmation reference, duplicate/retry recovery, staff sign-out, approved versus unapproved accounts, every staff write operation and a filtered CSV export. Check actual Worker CPU metrics: the Free limit is 10 ms per API invocation. Static files should bypass the Worker; do not change `assets.run_worker_first` to `true` for the whole site. No target-host load/CPU result is claimed before deployment to your account.
+A migration regression uses **2,505 fictional records** to check data preservation, paging and export beyond 2,000 registrations. This is a correctness test, not a production load benchmark. Test résumés are fictional and remain under `tests/fixtures/`.
 
-Close fictional events and use verified employer/event information before public launch. Agree access, retention/deletion and export handling with TGMSC. Use D1 Time Travel plus a separate controlled backup/export, test recovery, and keep a known-good deployment for rollback. Never put real candidate records or resumes in Git.
+Passing these checks does not establish recommendation accuracy on TGMSC candidates. Real-device performance, matching usefulness and production limits require continued evaluation with consented data. The dependency audit is separate from the test suite; passing tests does not mean the dependency audit is clean.
 
-## Configuration and security
+## Repository map
 
-- `.env` and `.dev.vars` are ignored. Examples contain blanks only.
-- `VITE_*` configuration becomes public JavaScript. Never place a server secret in those variables.
-- Firebase browser API configuration identifies the project; it does not grant staff access. Restrict the Firebase key to its intended APIs and authorised domains.
-- No service-account private key, Cloudflare API token or password belongs in the repository. Use provider-managed secrets if a future feature requires them.
-- API responses and exports use `Cache-Control: no-store`. Staff access is checked server-side. Signed tokens require the correct issuer, audience, signature, expiry, verified email and Google provider.
-- Bearer tokens are sent in request headers, never download URLs. CSV download uses the authenticated request. Cross-origin writes are rejected and there are no auth cookies added by this app.
-- Input validation, bound SQL, atomic writes, CSV formula escaping and reference-confirmed deletion are retained.
-- Rate limiting is best-effort and is not a complete anti-abuse service. Free quotas can stop service when exhausted; monitor usage. No zero-bug, uptime or hiring-accuracy guarantee is claimed.
+| Location | Contents |
+| --- | --- |
+| `app/` | Candidate and staff screens, styles and API handlers |
+| `components/placement/` | Shared education and role views |
+| `src/` | Browser entry, Firebase client and staff sign-in gate |
+| `worker/` | API routing and server access checks |
+| `lib/` | Parsing, matching, validation, authorisation and record queries |
+| `db/` and `drizzle/` | Schema definition and ordered SQL migrations |
+| `public/` | Model, WebAssembly runtime, PDF worker, fonts and licence notices |
+| `tests/` | Regression tests and fictional fixtures |
+| `docs/` | Deployment guide, asset manifests and screenshots |
 
-## Project files
+## Scope and next steps
 
-`app/` and `components/placement/`: screens and API handlers. `src/`: browser entry and Firebase login. `lib/`: matching, parsing, authentication and database operations. `worker/`: request routing. `drizzle/`: append-only migrations. `public/`: model, PDF worker, WebAssembly, fonts and licences. `tests/`: focused authentication and request-isolation tests.
+The current release supports placement-drive registration and organiser follow-up. It does not include OCR, employer accounts, automatic applications or hiring decisions. The first uncached model/runtime download is about **43 MiB**, so basic matching is useful on slower connections and lower-memory phones.
 
-Third-party licence notices are under `public/licenses` and `public/fonts`. The upstream runtime loader is kept unchanged with its matching WASM asset. New development should preserve model/runtime compatibility and all-role visibility, and add meaningful regression tests for behaviour changes.
+Priorities for further work are dependency maintenance, measured Android performance, consented relevance evaluation and agreed data-retention practices. New features should preserve candidate choice and keep requirements separate from text similarity.
 
-## Validation status
+## Development and contributions
 
-This migration passes 40 automated checks (including signed-token verification, wrong-project/expired/tampered-token rejection, unapproved accounts, request isolation, matching, parsing and legacy database migration checks), TypeScript checking and a production build. The five SQL migrations applied successfully to a fresh local D1 database. Real Google sign-in and Cloudflare CPU/load validation require the owner's configured Firebase and Cloudflare accounts and are not claimed as completed.
+Created by **[Mohammed Anwar Qureshi](https://github.com/Anwar-Qureshi)** during the TGMSC internship, from observing a placement-operations problem and developing the requirements, workflow and application with AI coding assistance. The system reuses established libraries and a pretrained model; it does not claim original model training.
+
+For a bug report, include the affected screen, steps to reproduce, expected behaviour and browser/device. Use fictional data and remove personal details from screenshots. Discuss substantial changes before implementation, and include relevant regression checks in pull requests.
+
+The repository currently has **no project-wide licence**. Public visibility alone does not grant an open-source licence. Bundled third-party assets retain their own notices under [`public/licenses`](public/licenses) and [`public/fonts`](public/fonts).
