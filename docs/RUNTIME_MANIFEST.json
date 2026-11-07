@@ -1,0 +1,21 @@
+{
+  "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
+  "pdfjs-dist": "4.10.38",
+  "files": [
+    {
+      "file": "lib/onnx-runtime.mjs",
+      "bytes": 44484,
+      "sha256": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9"
+    },
+    {
+      "file": "public/onnx/ort-wasm-simd-threaded.jsep.wasm",
+      "bytes": 21596019,
+      "sha256": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39"
+    },
+    {
+      "file": "public/pdf.worker.min.mjs",
+      "bytes": 1375838,
+      "sha256": "1baa1844c89c80a5b2797c916e75ab29254be46d8e9cb53cb6364d7aad84be36"
+    }
+  ]
+}

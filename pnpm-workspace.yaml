@@ -4,6 +4,7 @@ minimumReleaseAgeIgnoreMissingTime: false
 trustLockfile: false
 strictDepBuilds: true
 allowBuilds:
+  '@firebase/util': false
   esbuild: true
   fsevents: true
   onnxruntime-node: false

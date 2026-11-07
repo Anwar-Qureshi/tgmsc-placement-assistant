@@ -1,30 +1,6 @@
-import { headers } from "next/headers";
-import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
-export function db() {
-  if (!env.DB) throw Error("Database not configured");
-  return env.DB;
-}
-export async function staff() {
-  const h = await headers();
-  const service = String((env as any).STAFF_SERVICE_TOKEN || "");
-  const provided = (h.get("authorization") || "").replace(/^Bearer /, "");
-  const integrationMode = String(
-    (env as any).INTEGRATION_TEST_MODE || "disabled",
-  );
-  if (
-    integrationMode === "enabled" &&
-    service &&
-    provided &&
-    (await hash(provided)) === (await hash(service))
-  )
-    return true;
-  const user = await getChatGPTUser();
-  const allowed = String((env as any).STAFF_EMAILS || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase());
-  return !!user && allowed.includes(user.email.toLowerCase());
-}
+import {context} from "./context";
+export function db(){const d=context().env.DB;if(!d)throw Error("Database not configured");return d;}
+export async function staff(){return !!context().user;}
 export function json(data: unknown, status = 200) {
   return Response.json(data, {
     status,
@@ -75,9 +51,7 @@ export async function hash(value: string) {
     .join("");
 }
 
-export async function actor() {
-  return (await getChatGPTUser())?.email || "Authorised integration test";
-}
+export async function actor(){const user=context().user;if(!user)throw Error("Staff identity required");return user.email;}
 export async function auditStatement(action: string, recordId: string) {
   return db()
     .prepare(

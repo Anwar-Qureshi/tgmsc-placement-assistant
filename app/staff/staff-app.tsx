@@ -1,4 +1,5 @@
 "use client";
+import {authFetch,logout,exportCSV} from "@/src/firebase";
 import { useEffect, useState, useRef } from "react";
 import { qualificationNames } from "@/lib/matching";
 import EducationFields from "@/components/placement/education-fields";
@@ -57,7 +58,7 @@ export default function StaffApp() {
     const run = ++requestSequence.current;
     setLoading(true);
     try {
-      const r = await fetch("/api/staff?" + query);
+      const r = await authFetch("/api/staff?" + query);
       const result: any = await r.json();
       if (!r.ok) throw Error(result.error);
       if (run === requestSequence.current) {
@@ -101,7 +102,7 @@ export default function StaffApp() {
         };
         setValue(v);
       }
-      const r = await fetch("/api/staff", {
+      const r = await authFetch("/api/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, value: v }),
@@ -150,7 +151,7 @@ export default function StaffApp() {
         </a>
         <div className="staff-account">
           <span>{data?.user || "Authorised staff"}</span>
-          <a href="/signout-with-chatgpt?return_to=%2F">Sign out</a>
+          <button className="secondary" onClick={logout}>Sign out</button>
           <a href="/">Candidate view →</a>
         </div>
       </header>
@@ -237,11 +238,11 @@ export default function StaffApp() {
                 <div className="export-actions">
                   <a
                     className="button"
-                    href={"/api/staff?" + query + "&export=csv"}
+                    href="/api/staff" onClick={e=>{e.preventDefault();exportCSV("/api/staff?"+query+"&export=csv").catch(e=>setError(e.message));}}
                   >
                     Export matching records
                   </a>
-                  <a className="button secondary" href="/api/staff?export=csv">
+                  <a className="button secondary" href="/api/staff" onClick={e=>{e.preventDefault();exportCSV("/api/staff?export=csv").catch(e=>setError(e.message));}}>
                     Export all
                   </a>
                 </div>
