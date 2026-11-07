@@ -18,12 +18,12 @@
     {
       "binding": "DB",
       "database_name": "tgmsc-placement",
-      "database_id": "00000000-0000-4000-8000-000000000000",
+      "database_id": "75ef4e51-4118-4870-95b8-8b375e210e0e",
       "migrations_dir": "drizzle"
     }
   ],
   "vars": {
-    "FIREBASE_PROJECT_ID": ""
+    "FIREBASE_PROJECT_ID": "tgmsc-placement-assistant"
   },
   "observability": {
     "enabled": true
