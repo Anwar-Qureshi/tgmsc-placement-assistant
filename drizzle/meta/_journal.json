@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1794059316027,
+      "tag": "0000_ambiguous_diamondback",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794075821808,
+      "tag": "0001_regular_glorian",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794076617340,
+      "tag": "0002_friendly_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794076965640,
+      "tag": "0003_nice_sebastian_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794077074757,
+      "tag": "0004_chubby_tarot",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+CREATE INDEX `registrations_candidate_idx` ON `registrations` (`candidate_id`);
